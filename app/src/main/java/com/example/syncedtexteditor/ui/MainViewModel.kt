@@ -14,7 +14,7 @@ import java.net.ConnectException
 
 class MainViewModel @ViewModelInject constructor(
     private val mainUsecase: MainUsecase,
-    val application: Application
+    private val application: Application
 ) : ViewModel() {
 
     private val composite = CompositeDisposable()
@@ -33,34 +33,13 @@ class MainViewModel @ViewModelInject constructor(
                     Timber.d("Notes Fetched $it")
                     note.value = it
                     status.value = Status.IDLE
-
-                    SharedPreferences.saveData(
-                        context = application,
-                        key = TITLE_KEY,
-                        value = it.title
-                    )
-                    SharedPreferences.saveData(
-                        context = application,
-                        key = BODY_KEY,
-                        value = it.body
-                    )
+                    saveToCache(it)
                 },
                 {
                     when (it) {
                         is ConnectException -> {
                             status.value = Status.OFFLINE
-
-                            val title = SharedPreferences.getStringData(
-                                context = application,
-                                key = TITLE_KEY
-                            )
-
-                            val body = SharedPreferences.getStringData(
-                                context = application,
-                                key = BODY_KEY
-                            )
-
-                            note.value = Note(title = title.orEmpty(), body = body.orEmpty())
+                            note.value = fetchFromCache()
                         }
                         else -> {
                             Timber.e(it)
@@ -86,16 +65,11 @@ class MainViewModel @ViewModelInject constructor(
                         when (it) {
                             is ConnectException -> {
                                 status.value = Status.OFFLINE
-
-                                SharedPreferences.saveData(
-                                    context = application,
-                                    key = TITLE_KEY,
-                                    value = note.value?.title.orEmpty()
-                                )
-                                SharedPreferences.saveData(
-                                    context = application,
-                                    key = BODY_KEY,
-                                    value = note.value?.body.orEmpty()
+                                saveToCache(
+                                    Note(
+                                        title = note.value?.title.orEmpty(),
+                                        body = note.value?.body.orEmpty()
+                                    )
                                 )
                             }
                             else -> {
@@ -113,6 +87,31 @@ class MainViewModel @ViewModelInject constructor(
 
     fun setNoteBody(body: String) {
         note.value = note.value?.copy(body = body)
+    }
+
+    private fun saveToCache(note: Note) {
+        SharedPreferences.saveData(
+            context = application,
+            key = TITLE_KEY,
+            value = note.title
+        )
+        SharedPreferences.saveData(
+            context = application,
+            key = BODY_KEY,
+            value = note.body
+        )
+    }
+
+    private fun fetchFromCache(): Note {
+        val title = SharedPreferences.getStringData(
+            context = application,
+            key = TITLE_KEY
+        )
+        val body = SharedPreferences.getStringData(
+            context = application,
+            key = BODY_KEY
+        )
+        return Note(title = title.orEmpty(), body = body.orEmpty())
     }
 
     override fun onCleared() {

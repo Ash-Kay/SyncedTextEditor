@@ -9,6 +9,7 @@ import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.Observer
 import com.example.syncedtexteditor.R
 import com.example.syncedtexteditor.domain.usercase.MainUsecase
+import com.example.syncedtexteditor.utils.NetworkUtils
 import com.example.syncedtexteditor.utils.Status
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
@@ -75,9 +76,16 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        NetworkUtils.getNetworkLiveData(this).observe(this, Observer {
+            if (it) {
+                tvStatus.text = tvStatus.text.toString() + "ONLINE"
+                viewModel.postOrUpdateNote()
+            } else {
+                tvStatus.text = tvStatus.text.toString() + "OFFNLINE"
+            }
+        })
+
         viewModel.note.observe(this, Observer {
-//            etTitle.removeTextChangedListener(textWatcherBody)
-//            etBody.removeTextChangedListener(textWatcherBody)
             etTitle.setText(it.title)
             etBody.setText(it.body)
 
